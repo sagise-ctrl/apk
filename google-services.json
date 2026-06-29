@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1047670058213",
+    "project_id": "tugasly-admin",
+    "storage_bucket": "tugasly-admin.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1047670058213:android:a322e00e1cbb155504380c",
+        "android_client_info": {
+          "package_name": "id.my.tugasly"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAcWANg50-NC9IUgPpCeJQ9F7MJs_P4LXI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

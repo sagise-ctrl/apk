@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   StyleSheet,
   Text,
@@ -10,6 +11,17 @@ import {
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
+
+// Setup notification channel (Android)
+if (Platform.OS === "android") {
+  Notifications.setNotificationChannelAsync("tugasly-admin", {
+    name: "Tugasly Admin",
+    importance: Notifications.AndroidImportance.MAX,
+    vibrationPattern: [0, 250, 250, 250],
+    sound: "nada.wav",
+    lightColor: "#464BD8",
+  });
+}
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -38,10 +50,40 @@ async function registerForPushNotificationsAsync() {
     return null;
   }
 
-  const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-  const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-  console.log("EXPO_PUSH_TOKEN:", token);
+  const token = (await Notifications.getDevicePushTokenAsync()).data;
+  console.log("FCM_TOKEN:", token);
   return token;
+}
+
+async function registerTokenToServer(token) {
+  console.log("REGISTER_TOKEN: mulai kirim token", token?.slice(0, 20));
+  try {
+    const res = await fetch("https://tugasly.my.id/api/register-token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    });
+    console.log("REGISTER_TOKEN: status", res.status);
+    const data = await res.json();
+    console.log("REGISTER_TOKEN_RESULT:", JSON.stringify(data));
+  } catch (err) {
+    console.log("REGISTER_TOKEN_ERROR:", String(err));
+  }
+}
+
+async function loadNotifications() {
+  try {
+    const stored = await AsyncStorage.getItem("notif_history");
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function saveNotifications(notifications) {
+  try {
+    await AsyncStorage.setItem("notif_history", JSON.stringify(notifications));
+  } catch {}
 }
 
 export default function App() {
@@ -51,21 +93,40 @@ export default function App() {
   const responseListener = useRef();
 
   useEffect(() => {
+    // Load riwayat notif dari storage
+    loadNotifications().then((saved) => {
+      if (saved.length > 0) setNotifications(saved);
+    });
+
     registerForPushNotificationsAsync().then((t) => {
-      if (t) setToken(t);
+      if (t) {
+        setToken(t);
+        registerTokenToServer(t);
+      }
+    });
+
+    // Listen token berubah (reinstall, refresh Google)
+    const tokenListener = Notifications.addPushTokenListener((newToken) => {
+      const t = newToken.data;
+      if (t) {
+        setToken(t);
+        registerTokenToServer(t);
+      }
     });
 
     notificationListener.current =
       Notifications.addNotificationReceivedListener((notification) => {
-        setNotifications((prev) => [
-          {
-            id: Date.now().toString(),
-            title: notification.request.content.title,
-            body: notification.request.content.body,
-            time: new Date().toLocaleTimeString("id-ID"),
-          },
-          ...prev,
-        ]);
+        const newNotif = {
+          id: Date.now().toString(),
+          title: notification.request.content.title,
+          body: notification.request.content.body,
+          time: new Date().toLocaleTimeString("id-ID"),
+        };
+        setNotifications((prev) => {
+          const updated = [newNotif, ...prev].slice(0, 50); // max 50 notif
+          saveNotifications(updated);
+          return updated;
+        });
       });
 
     responseListener.current =
@@ -75,9 +136,10 @@ export default function App() {
 
     return () => {
       Notifications.removeNotificationSubscription(
-        notificationListener.current
+        notificationListener.current,
       );
       Notifications.removeNotificationSubscription(responseListener.current);
+      Notifications.removeNotificationSubscription(tokenListener);
     };
   }, []);
 
@@ -137,8 +199,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#464BD8",
   },
-  tokenLabel: { fontSize: 11, color: "#464BD8", fontWeight: "bold", marginBottom: 6 },
-  tokenText: { fontSize: 11, color: "#1e1e2e", fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" },
+  tokenLabel: {
+    fontSize: 11,
+    color: "#464BD8",
+    fontWeight: "bold",
+    marginBottom: 6,
+  },
+  tokenText: {
+    fontSize: 11,
+    color: "#1e1e2e",
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+  },
   waiting: { textAlign: "center", color: "#888", margin: 20 },
   sectionTitle: {
     fontSize: 14,

@@ -16,7 +16,13 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "id.my.tugasly.admin"
+      "package": "id.my.tugasly",
+      "googleServicesFile": "./google-services.json",
+      "notification": {
+        "icon": "./assets/icon.png",
+        "color": "#464BD8",
+        "sounds": ["./assets/sounds/nada.wav"]
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
