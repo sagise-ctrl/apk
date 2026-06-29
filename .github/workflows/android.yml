@@ -18,10 +18,12 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      # 🔥 tambah swap memory biar nggak OOM
+      # 🔥 SAFE SWAP (fix error fallocate + locked file)
       - name: Add swap
         run: |
-          sudo fallocate -l 4G /swapfile
+          sudo swapoff -a || true
+          sudo rm -f /swapfile || true
+          sudo fallocate -l 4G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=4096
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
           sudo swapon /swapfile
@@ -37,7 +39,7 @@ jobs:
       - name: Expo prebuild
         run: npx expo prebuild --platform android
 
-      # 🔥 build lebih stabil (no daemon, no parallel)
+      # 🔥 BUILD STABIL (anti crash CI)
       - name: Build APK
         run: |
           cd android
