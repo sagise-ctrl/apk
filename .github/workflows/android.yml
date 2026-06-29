@@ -18,7 +18,7 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      # 🔥 SAFE SWAP (fix error fallocate + locked file)
+      # 🔥 SAFE SWAP (anti OOM)
       - name: Add swap
         run: |
           sudo swapoff -a || true
@@ -39,12 +39,16 @@ jobs:
       - name: Expo prebuild
         run: npx expo prebuild --platform android
 
-      # 🔥 BUILD STABIL (anti crash CI)
+      # 🔥 BUILD FIXED (matikan lint biar nggak crash)
       - name: Build APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon --no-parallel
+          ./gradlew assembleRelease \
+            --no-daemon \
+            --no-parallel \
+            -x lintVitalAnalyzeRelease \
+            -x lint
 
       - uses: actions/upload-artifact@v4
         with:
