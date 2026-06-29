@@ -18,15 +18,31 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # 🔥 tambah swap memory biar nggak OOM
+      - name: Add swap
+        run: |
+          sudo fallocate -l 4G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
+
       - uses: expo/expo-github-action@v8
         with:
           expo-version: latest
 
-      - run: npm install
+      - name: Install dependencies
+        run: npm ci
 
-      - run: npx expo prebuild --platform android
+      - name: Expo prebuild
+        run: npx expo prebuild --platform android
 
-      - run: cd android && chmod +x gradlew && ./gradlew assembleRelease
+      # 🔥 build lebih stabil (no daemon, no parallel)
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --no-parallel
 
       - uses: actions/upload-artifact@v4
         with:
