@@ -158,7 +158,7 @@ export default function App() {
           </Text>
         </View>
       ) : (
-        <Text style={styles.waiting}>Menunggu token...</Text>
+        <Text style={styles.waiting}>Nunggu token...</Text>
       )}
 
       <Text style={styles.sectionTitle}>Riwayat Notifikasi</Text>
